@@ -1,0 +1,147 @@
+#!/bin/bash
+project=$1
+qname=week
+#qname=pseq_rd
+
+fdmdir=/proj/prins_lab/darshan/rootFDM
+fdmlogdir=$fdmdir/log
+fdmconfigdir=$fdmdir/actg/bin/config
+
+rootdir=/proj/prins_lab/darshan/rootFDM
+projdir=$rootdir/project/$project
+listdir=$projdir/list
+statusdir=$projdir/status
+
+
+cmd0="$fdmdir/actg/bin/fdm -c $fdmconfigdir/fdm_$project.cfg"
+
+#test
+if [ ! -f $statusdir/done.p0 ] ; then
+bsub -q $qname -n 1 -o $fdmlogdir/p0.$project.log -J p0.$project $cmd0
+fi
+
+#wait for finish
+while [ ! -f $statusdir/done.p0 ] ;
+do
+      sleep 5
+done
+sleep 5
+
+#preact
+if [ ! -f $statusdir/done.p1 ] ; then
+for i in $(cat $listdir/alllist.txt)
+do
+    bsub -q $qname -n 1 -o $fdmlogdir/p1.$project.$i.log -J p1.$i.$project $cmd0 --preact $i
+done
+fi
+
+#wait for finish
+while [ ! -f $statusdir/done.p1 ] ;
+do
+      sleep 5
+done
+sleep 5
+
+#union junction
+if [ ! -f $statusdir/done.p2 ] ; then
+bsub -q $qname -n 1 -o $fdmlogdir/p2.$project.log -J p2.$project $cmd0  --collate 2 $project
+fi
+
+while [ ! -f $statusdir/done.p2 ] ;
+do
+      sleep 5
+done
+sleep 5
+
+#act
+if [ ! -f $statusdir/done.p3 ] ; then
+for i in $(cat $listdir/alllist.txt)
+do
+    bsub  -q $qname -n 1 -o $fdmlogdir/p3.$project.$i.log -J p3.$i.$project $cmd0 --act $i
+done
+fi
+
+while [ ! -f $statusdir/done.p3 ] ;
+do
+      sleep 5
+done
+sleep 5
+
+#ext flows
+if [ ! -f $statusdir/done.p4 ] ; then
+for i in $(cat $listdir/chrlist.txt)
+do
+    bsub  -q $qname -n 1 -o $fdmlogdir/p4.$project.$i.log -J p4.$i.$project $cmd0 --extflows $i
+done
+fi
+
+while [ ! -f $statusdir/done.p4 ] ;
+do
+      sleep 5
+done
+sleep 5
+
+#concat flows
+if [ ! -f $statusdir/done.p5 ] ; then
+bsub  -q $qname -n 1 -o $fdmlogdir/p5.$project.log -J p5.$project $cmd0  --catflows
+fi
+
+
+while [ ! -f $statusdir/done.p5 ] ;
+do
+      sleep 5
+done
+sleep 5
+
+#fdm fast
+if [ ! -f $statusdir/done.p6 ] ; then
+for i in $(cat $listdir/allpair.txt)
+do
+    bsub -q $qname -n 1 -o $fdmlogdir/p6.$project.$i.log -J p6.$i.$project $cmd0 --fdmfast $i
+done
+fi
+
+while [ ! -f $statusdir/done.p6 ] ;
+do
+      sleep 5
+done
+sleep 5
+
+
+#fdmfilter
+if [ ! -f $statusdir/done.p7 ] ; then
+#merge lists and filter and split gene list into 50 each
+bsub -q $qname -n 1 -o $fdmlogdir/p7.$project.log -J p7.$project $cmd0  --fdmfilter
+fi
+
+while [ ! -f $statusdir/done.p7 ] ;
+do
+      sleep 5
+done
+sleep 5
+
+
+#fdmfull
+if [ ! -f $statusdir/done.p8 ] ; then
+x=0
+for i in $(cat $listdir/allpair.txt)
+do
+    x=`expr $x + 1`
+    y=0 
+    for j in $(ls $listdir/splitgene/G*)
+    do
+        y=`expr $y + 1`
+        echo $x $y $i $j
+        bsub  -q $qname -n 1 -o $fdmlogdir/p8.$project.$x.$y.log -J p8.$x.$y.$project $cmd0 --fdmfull $i -g $j
+    done
+done
+fi
+
+while [ ! -f $statusdir/done.p8 ] ;
+do
+      sleep 5
+done
+sleep 5
+
+#report
+bsub  -q $qname -n 1 -o $fdmlogdir/p9.$project.log -J p9.$project $cmd0  --report

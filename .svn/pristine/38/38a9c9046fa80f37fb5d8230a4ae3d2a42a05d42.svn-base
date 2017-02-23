@@ -1,0 +1,5 @@
+#!/bin/bash
+PYPATH=/usr/bin
+#PYPATH=/nas02/home/d/a/darshan/bin
+BINPATH=`dirname $0`
+$PYPATH/python "$BINPATH/../main.py" $@

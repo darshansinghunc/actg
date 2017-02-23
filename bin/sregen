@@ -1,0 +1,5 @@
+#!/bin/bash
+#configuration tells one or multiple datasets
+
+BINPATH=`dirname $0`
+python "$BINPATH/../sregen/main.py" $@

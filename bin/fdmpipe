@@ -1,0 +1,181 @@
+#!/bin/bash
+project=$1
+
+numparallel=$2
+
+fdmdir=/home/darshan
+fdmconfigdir=$fdmdir/actg/bin/config
+
+rootdir=/home/darshan/rootFDM
+projdir=$rootdir/project/$project
+listdir=$projdir/list
+statusdir=$projdir/status
+
+cmd0="$fdmdir/actg/bin/fdm -c $fdmconfigdir/fdm_$project.cfg"
+
+#p0
+echo "starting process 0"
+if  [ ! -f $statusdir/done.p0 ]; then
+$cmd0 &
+fi
+
+#wait for finish
+while [ ! -f $statusdir/done.p0 ] ;
+do
+      sleep 5
+done
+sleep 1
+
+#preact
+#p1
+echo "starting process 1"
+if  [ ! -f $statusdir/done.p1 ]; then
+x=0
+for i in $(cat $listdir/alllist.txt)
+do
+    if  [ ! -f $statusdir/p1.$i.done ]; then 
+    $cmd0 --preact $i &
+    fi
+    x=`expr $x + 1`
+    if (( $x % $numparallel == 0 )); then wait; fi 
+done
+fi
+
+#wait for finish
+while [ ! -f $statusdir/done.p1 ] ;
+do
+      sleep 5
+done
+sleep 1
+
+#union junction
+#p2
+echo "starting process 2"
+if  [ ! -f $statusdir/done.p2 ]; then
+    $cmd0  --collate 2 $project &
+fi
+
+while [ ! -f $statusdir/done.p2 ] ;
+do
+      sleep 5
+done
+sleep 1
+
+#act
+#p3
+echo "starting process 3"
+if  [ ! -f $statusdir/done.p3 ]; then
+x=0
+for i in $(cat $listdir/alllist.txt)
+do
+    if  [ ! -f $statusdir/p3.$i.done ]; then 
+    $cmd0 --act $i &
+    fi
+    x=`expr $x + 1`
+    if (( $x % $numparallel == 0 )); then wait; fi     
+done
+fi
+
+while [ ! -f $statusdir/done.p3 ] ;
+do
+      sleep 5
+done
+sleep 1
+
+
+#ext flows
+#p4
+echo "starting process 4"
+if  [ ! -f $statusdir/done.p4 ]; then
+x=0
+for i in $(cat $listdir/chrlist.txt)
+do
+    $cmd0 --extflows $i &
+    x=`expr $x + 1`
+    if (( $x % $numparallel == 0 )); then wait; fi         
+done
+fi
+
+while [ ! -f $statusdir/done.p4 ] ;
+do
+      sleep 5
+done
+sleep 1
+
+
+#concat flows
+#p5
+echo "starting process 5"
+if  [ ! -f $statusdir/done.p5 ]; then
+$cmd0  --catflows &
+fi
+
+while [ ! -f $statusdir/done.p5 ] ;
+do
+      sleep 5
+done
+sleep 1
+
+
+#fdm fast
+#p6
+echo "starting process 6"
+if  [ ! -f $statusdir/done.p6 ]; then
+x=0
+for i in $(cat $listdir/allpair.txt)
+do
+    $cmd0 --fdmfast $i &
+    x=`expr $x + 1`
+    if (( $x % $numparallel == 0 )); then wait; fi     
+done
+fi
+
+while [ ! -f $statusdir/done.p6 ] ;
+do
+      sleep 5
+done
+sleep 1
+
+#fdmfilter
+#merge lists and filter and split gene list into 50 each
+#p7
+echo "starting process 7"
+if  [ ! -f $statusdir/done.p7 ]; then
+$cmd0  --fdmfilter &
+fi
+
+while [ ! -f $statusdir/done.p7 ] ;
+do
+      sleep 5
+done
+sleep 1
+
+
+#fdmfull
+#p8
+echo "starting process 8"
+if  [ ! -f $statusdir/done.p8 ]; then
+x=0
+for i in $(cat $listdir/allpair.txt)
+do
+    for j in $(ls $listdir/splitgene/G*)
+    do
+        $cmd0 --fdmfull $i -g $j &
+        x=`expr $x + 1`
+        if (( $x % $numparallel == 0 )); then wait; fi             
+    done
+done
+fi
+
+while [ ! -f $statusdir/done.p8 ] ;
+do
+      sleep 5
+done
+sleep 1
+
+#report
+#p9
+echo "starting process 9"
+if  [ ! -f $statusdir/done.p9 ]; then
+$cmd0  --report &
+fi

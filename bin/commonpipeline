@@ -1,0 +1,44 @@
+"""
+Type 1
+N>1 datasets
+All vs All
+filter1: max fdm > ffast, all cov > min_cov
+filter2: any pair sig
+rank: max fdm
+
+TYPE 2
+Two small unpaired groups
+All[1] vs All[2]
+filter1: max fdm > ffast, all cov > min_cov
+filter2: any pair sig
+filter3: sig pair shuffle significant
+rank: high fdm
+
+TYPE 3
+Two small paired groups
+G1[i] vs G2[i]
+filter1: pool fdm > ffast, all cov > min_cov
+filter2: pool sig
+filter3: combined pvalue> bonferroni pvalue
+Rank: combined p-value 
+
+TYPE 4
+One large Group
+filter1: cov (for x% samples) > min_cov
+(optional filter) ignore first exon
+[Collate FEF]
+[Perform 2-cluster, 3-cluster on FEF: fractional edge flow]
+[Report ACTG of Closest to median of cluster]
+[Report FEF vs Log Coverage 2 by 2 histogram]
+Rank by Best Clustering
+
+TYPE 5
+Two large Groups
+filter1: cov (for x% in both samples) > min_cov
+[Collate FEF]
+[Perform group FEF difference]
+[Report ACTG of random/given]
+[Report Jitter plot]
+Rank by p-value
+"""
+
